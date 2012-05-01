@@ -1,2 +1,3 @@
 keyID = ''
 vCode = ''
+name = ''
