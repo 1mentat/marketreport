@@ -55,7 +55,8 @@ if __name__ == '__main__':
             for row in wtrans.transactions:
                 marketdb.addtransaction(row.transactionDateTime,row.transactionID,row.quantity,row.typeName,row.typeID,row.price,row.clientID,row.clientName,row.stationID,row.stationName,row.transactionType,row.transactionFor)
 
-            items = marketdb.itemIDList()
+            #items = marketdb.itemIDList()
 
-            for item in items:
-                marketdb.createSummaryForItem(item, 14)
+            #for item in items:
+            #    marketdb.createSummaryForItem(item, 14)
+            marketdb.createSummaryForItems(14)
