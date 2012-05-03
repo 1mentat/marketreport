@@ -4,6 +4,7 @@ from datetime import timedelta
 import codecs
 import sqlite3
 import sys
+import settings
 
 conn = None
 c = None
@@ -112,12 +113,12 @@ def itemIDList():
 def createSummaryFromDay(day, daybefore):
     try:
         c.execute("CREATE TABLE daytemp AS SELECT quantity,typeName,typeID,price,transactionType FROM transactions WHERE transactionDateTime <= {1} AND transactionDateTime > {2}".format(id, timegm(day.utctimetuple()), timegm(daybefore.utctimetuple())))
-        #c.execute("SELECT quantity,typeName,typeID,price,transactionType INTO daytemp FROM transactions WHERE transactionDateTime <= {1} AND transactionDateTime > {2}".format(id, timegm(day.utctimetuple()), timegm(daybefore.utctimetuple())))
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on createDay"
         return
 
+    dmy = day.strftime("%Y%m%d")
     items = set()
 
     try:
@@ -128,6 +129,12 @@ def createSummaryFromDay(day, daybefore):
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on distinct items for daytemp select"
+
+    for filtered in settings.excluded_items:
+        try:
+            items.remove(filtered)
+        except KeyError:
+            pass
     
     for item in items:
         bought = 0
@@ -146,13 +153,19 @@ def createSummaryFromDay(day, daybefore):
                     soldCost += row[0] * row[3]
 
             if rows:
-                print 'For {0}'.format(day)
-                if bought:
-                    print 'Bought {0} of \"{1}\" for a total cost of {2}'.format(bought, rows[0][1], boughtCost)
-                if sold:
-                    print 'Sold {0} of \"{1}\" for a total revenue of {2}'.format(sold, rows[0][1], soldCost)
+                #print 'For {0}'.format(day)
+                #if bought:
+                #    print 'Bought {0} of \"{1}\" for a total cost of {2}'.format(bought, rows[0][1], boughtCost)
+                #if sold:
+                #    print 'Sold {0} of \"{1}\" for a total revenue of {2}'.format(sold, rows[0][1], soldCost)
 
-            #c.execute('''create table if not exists summary (typeID integer, dmy integer, bought integer, boughtCost integer, sold integer, soldCost integer, unique(typeID, dmy))''')
+                try:
+                    c.execute('''INSERT or REPLACE INTO summary values (?, ?, ?, ?, ?, ?)''',(item, dmy, bought, boughtCost, sold, soldCost))
+                    conn.commit()
+                except:
+                    print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+                    print "Exception on summary insert"
+
         except:
             print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
             print "Exception on price processing on daytemp select"
