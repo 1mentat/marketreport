@@ -60,3 +60,4 @@ if __name__ == '__main__':
             #for item in items:
             #    marketdb.createSummaryForItem(item, 14)
             marketdb.createSummaryForItems(14)
+            marketdb.createStocks()

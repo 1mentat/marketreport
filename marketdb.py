@@ -32,6 +32,7 @@ def setupdb() :
                                                             transactionFor varchar, \
                                                             unique(transactionID))''')
         c.execute('''create table if not exists summary (typeID integer, dmy integer, bought integer, boughtCost integer, sold integer, soldCost integer, unique(typeID, dmy))''')
+        c.execute('''create table if not exists stocks (typeID integer, count integer, value integer, unique(typeID))''')
         conn.commit()
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
@@ -45,46 +46,6 @@ def addtransaction(transactionDateTime,transactionID,quantity,typeName,typeID,pr
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on link insert"
 
-def createSummaryForItemDay(id, day, daybefore):
-    bought = 0
-    boughtCost = 0
-    sold = 0
-    soldCost = 0
-    try:
-        c.execute("SELECT quantity,typeName,typeID,price,transactionType FROM transactions WHERE typeID={0} AND transactionDateTime <= {1} AND transactionDateTime > {2}".format(id, timegm(day.utctimetuple()), timegm(daybefore.utctimetuple())))
-        rows = c.fetchall()
-        for row in rows:
-            if row[4] == 'buy':
-                bought += row[0]
-                boughtCost += row[0] * row[3]
-            else:
-                sold += row[0]
-                soldCost += row[0] * row[3]
-
-        if rows:
-            print 'For {0}'.format(day)
-            if bought:
-                print 'Bought {0} of {1} for a total cost of {2}'.format(bought, rows[0][1], boughtCost)
-            if sold:
-                print 'Sold {0} of {1} for a total revenue of {2}'.format(sold, rows[0][1], soldCost)
-
-        #c.execute('''create table if not exists summary (typeID integer, dmy integer, bought integer, boughtCost integer, sold integer, soldCost integer, unique(typeID, dmy))''')
-    except:
-        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-        print "Exception on createSummaryForItem select"
-
-def createSummaryForItem(id, days):
-    now = datetime.utcnow()
-    today = datetime(now.year,now.month,now.day,23,59,59)
-    day = timedelta(1)
-    yesterday = today - day
-    last = today - (days * day)
-
-    while yesterday >= last:
-        createSummaryForItemDay(id, today, yesterday)
-        today = yesterday
-        yesterday = today - day
-
 def createSummaryForItems(days):
     now = datetime.utcnow()
     today = datetime(now.year,now.month,now.day,23,59,59)
@@ -96,19 +57,6 @@ def createSummaryForItems(days):
         createSummaryFromDay(today, yesterday)
         today = yesterday
         yesterday = today - day
-
-def itemIDList():
-    items = set()
-    try:
-        c.execute("SELECT DISTINCT typeID FROM transactions")
-        rows = c.fetchall()
-        for row in rows:
-            items.add(row[0])
-    except:
-        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-        print "Exception on createSummaryForItem select"
-    
-    return items
 
 def createSummaryFromDay(day, daybefore):
     try:
@@ -153,12 +101,6 @@ def createSummaryFromDay(day, daybefore):
                     soldCost += row[0] * row[3]
 
             if rows:
-                #print 'For {0}'.format(day)
-                #if bought:
-                #    print 'Bought {0} of \"{1}\" for a total cost of {2}'.format(bought, rows[0][1], boughtCost)
-                #if sold:
-                #    print 'Sold {0} of \"{1}\" for a total revenue of {2}'.format(sold, rows[0][1], soldCost)
-
                 try:
                     c.execute('''INSERT or REPLACE INTO summary values (?, ?, ?, ?, ?, ?)''',(item, dmy, bought, boughtCost, sold, soldCost))
                     conn.commit()
@@ -172,7 +114,67 @@ def createSummaryFromDay(day, daybefore):
 
     try:
         c.execute("DROP TABLE daytemp")
+        conn.commit()
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on dropping daytemp"
 
+def createStocks():
+    items = set()
+
+    try:
+        c.execute("SELECT DISTINCT typeID FROM summary")
+        rows = c.fetchall()
+        for row in rows:
+            items.add(row[0])
+    except:
+        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+        print "Exception on distinct items for summary select"
+
+    for filtered in settings.excluded_items:
+        try:
+            items.remove(filtered)
+        except KeyError:
+            pass
+
+    for item in sorted(items):
+        bought = 0
+        boughtCost = 0
+        sold = 0
+        soldCost = 0
+        try:
+            c.execute("SELECT typeID,bought,boughtCost,sold,soldCost FROM summary WHERE typeID={0}".format(item))
+            rows = c.fetchall()
+            for row in rows:
+                bought += row[1]
+                boughtCost += row[2]
+                sold += row[3]
+                soldCost += row[4]
+
+            if rows:
+                if (sold and bought):
+                    averageValue = ((soldCost / sold) + (boughtCost / bought)) / 2
+                elif sold:
+                    averageValue = (soldCost / sold)
+                elif bought:
+                    averageValue = (boughtCost / bought)
+
+                if bought >= sold:
+                    stock = bought - sold
+                elif sold > bought:
+                    stock = 0
+
+                stockValue = averageValue * stock
+
+                print '{0} average value of {1}, stock value of {2}'.format(item,averageValue,stockValue)
+
+                #try:
+                #    c.execute('''INSERT or REPLACE INTO summary values (?, ?, ?, ?, ?, ?)''',(item, dmy, bought, boughtCost, sold, soldCost))
+                #    conn.commit()
+                #except:
+                #    print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+                #    print "Exception on summary insert"
+
+        except:
+            print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+            print "Exception on price processing on summary select"
