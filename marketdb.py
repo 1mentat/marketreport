@@ -1,4 +1,6 @@
-import time
+from calendar import timegm
+from datetime import datetime
+from datetime import timedelta
 import codecs
 import sqlite3
 import sys
@@ -42,22 +44,47 @@ def addtransaction(transactionDateTime,transactionID,quantity,typeName,typeID,pr
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on link insert"
 
-def createSummaryForItem(id, days):
+def createSummaryForItemDay(id, day, daybefore):
     bought = 0
     boughtCost = 0
-    today = time.time()
-    last = today - (days * 24 * 60 * 60)
+    sold = 0
+    soldCost = 0
     try:
-        c.execute("SELECT quantity,typeName,typeID,price,transactionType FROM transactions WHERE typeID={0}".format(id)) #XXX add date filter
+        c.execute("SELECT quantity,typeName,typeID,price,transactionType FROM transactions WHERE typeID={0} AND transactionDateTime <= {1} AND transactionDateTime > {2}".format(id, timegm(day.utctimetuple()), timegm(daybefore.utctimetuple())))
         rows = c.fetchall()
         for row in rows:
             if row[4] == 'buy':
-                print row
+                bought += row[0]
+                boughtCost += row[0] * row[3]
             else:
-                print row[4]
+                sold += row[0]
+                soldCost += row[0] * row[3]
+
+        if rows:
+            print 'For {0}'.format(day)
+            if bought:
+                print 'Bought {0} of {1} for a total cost of {2}'.format(bought, rows[0][1], boughtCost)
+            if sold:
+                print 'Sold {0} of {1} for a total revenue of {2}'.format(sold, rows[0][1], soldCost)
+
+        #c.execute('''create table if not exists summary (typeID integer, dmy integer, bought integer, boughtCost integer, sold integer, soldCost integer, unique(typeID, dmy))''')
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on createSummaryForItem select"
+
+def createSummaryForItem(id, days):
+    bought = 0
+    boughtCost = 0
+    now = datetime.utcnow()
+    today = datetime(now.year,now.month,now.day,23,59,59)
+    day = timedelta(1)
+    yesterday = today - day
+    last = today - (days * day)
+
+    while yesterday >= last:
+        createSummaryForItemDay(id, today, yesterday)
+        today = yesterday
+        yesterday = today - day
 
 def itemIDList():
     items = set()

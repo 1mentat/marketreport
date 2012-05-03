@@ -58,4 +58,4 @@ if __name__ == '__main__':
             items = marketdb.itemIDList()
 
             for item in items:
-                marketdb.createSummaryForItem(item, 30)
+                marketdb.createSummaryForItem(item, 14)
