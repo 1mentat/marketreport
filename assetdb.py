@@ -31,11 +31,14 @@ def addasset(locationID, typeID, quantity):
         print "Exception on asset insert"
 
 def assetsByTypeID(typeID):
+    assets = []
     try:
         c.execute("SELECT * FROM assets WHERE typeID={0}".format(typeID))
         rows = c.fetchall()
         for row in rows:
-            print row
+            assets.append(row)
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on assetsByTypeID"
+
+    return assets

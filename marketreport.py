@@ -54,8 +54,8 @@ if __name__ == '__main__':
             included_items_ids.add(typeID)
 
     for typeID in included_items_ids:
-        print typeID
-        assetdb.assetsByTypeID(typeID)
+        assets = assetdb.assetsByTypeID(typeID)
+        print assets
 
     #marketdb.createSummaryForItems(14)
     #marketdb.createStocks()
