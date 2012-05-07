@@ -2,6 +2,8 @@ import imp, argparse
 import settings
 import time
 import marketdb
+import assetdb
+import evedb
 eveapi = imp.load_source('eveapi', '../eveapi/eveapi.py')
 
 market_transaction = 2
@@ -9,6 +11,7 @@ brokers_fee = 46
 transaction_tax = 54
 
 def taxcheck(character, auth):
+    matched_broker = set()
     walletjournal = auth.char.WalletJournal(characterID=character.characterID)
     transactionsByRefTypeID = walletjournal.transactions.GroupedBy('refTypeID')
     transactionsByDate = walletjournal.transactions.GroupedBy('date')
@@ -35,29 +38,24 @@ def taxcheck(character, auth):
 
 if __name__ == '__main__':
     marketdb.setupdb()
-    matched_broker = set()
-    parser = argparse.ArgumentParser(description='Options')
-    parser.add_argument('-n', '--name', dest='name', default=settings.name)
-    args = parser.parse_args()
+    assetdb.setupdb()
+    evedb.setupdb()
+    included_items_ids = set()
+    #parser = argparse.ArgumentParser(description='Options')
+    #parser.add_argument('-n', '--name', dest='name', default=settings.name)
+    #args = parser.parse_args()
 
-    api = eveapi.EVEAPIConnection()
-    auth = api.auth(keyID=settings.keyID, vCode=settings.vCode)
+    for name in settings.included_items:
+        typeID = evedb.getTypeIDfromTypeName(name)
+        if typeID == -1:
+            print 'Unable to find {0} in item database'.format(name)
+            pass
+        else:
+            included_items_ids.add(typeID)
 
-    result = auth.account.Characters()
+    for typeID in included_items_ids:
+        print typeID
+        assetdb.assetsByTypeID(typeID)
 
-    for character in result.characters:
-        if character.name==args.name:
-
-            #taxcheck(character,auth)
-
-            wtrans = auth.char.WalletTransactions(characterID=character.characterID)
-
-            for row in wtrans.transactions:
-                marketdb.addtransaction(row.transactionDateTime,row.transactionID,row.quantity,row.typeName,row.typeID,row.price,row.clientID,row.clientName,row.stationID,row.stationName,row.transactionType,row.transactionFor)
-
-            #items = marketdb.itemIDList()
-
-            #for item in items:
-            #    marketdb.createSummaryForItem(item, 14)
-            marketdb.createSummaryForItems(14)
-            marketdb.createStocks()
+    #marketdb.createSummaryForItems(14)
+    #marketdb.createStocks()
