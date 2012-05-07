@@ -1,0 +1,17 @@
+Getting Started:
+1) cd ..; git clone https://1mentat@github.com/1mentat/eveapi.git
+2) wget http://zofu.no-ip.de/esc10/esc10-sqlite3-v1.db.bz2
+3) bunzip2 sc10-sqlite3-v1.db.bz2
+4) mv sc10-sqlite3-v1.db.bz2 eve.db
+5) cp settings_template.py settings.py
+6) edit settings.py to add your EVE API key, main character name, and monitored items
+7) python assetupdate.py
+8) python marketupdate.py
+9) python marketreport.py
+
+To add alts:
+1) python assetupdate.py -n '<alt name>'
+2) python marketupdate.py -n '<alt name>'
+
+TODO:
+Finish Gevlon Goblin equation by properly tracking average stock
