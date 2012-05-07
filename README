@@ -14,4 +14,6 @@ To add alts:
 2) python marketupdate.py -n '<alt name>'
 
 TODO:
+Add in tax handling (per item settings probably)
 Finish Gevlon Goblin equation by properly tracking average stock
+Add in tax lookups
