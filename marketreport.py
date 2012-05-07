@@ -54,8 +54,8 @@ if __name__ == '__main__':
             included_items_ids.add(typeID)
 
     for typeID in included_items_ids:
-        assets = assetdb.assetsByTypeID(typeID)
-        print assets
+        stock = assetdb.stockByTypeID(typeID)
+        value = marketdb.itemValueOverPeriod(settings.valuePeriod,typeID)
+        print '{3}: stock of {0} worth {1} at prices over the last {2} days'.format(stock, stock * value, settings.valuePeriod, evedb.getTypeNamefromTypeID(typeID))
 
     #marketdb.createSummaryForItems(14)
-    #marketdb.createStocks()

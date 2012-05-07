@@ -42,3 +42,16 @@ def assetsByTypeID(typeID):
         print "Exception on assetsByTypeID"
 
     return assets
+
+def stockByTypeID(typeID):
+    stock = 0
+    try:
+        c.execute("SELECT quantity FROM assets WHERE typeID={0}".format(typeID))
+        rows = c.fetchall()
+        for row in rows:
+            stock += row[0]
+    except:
+        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+        print "Exception on stockByTypeID"
+
+    return stock

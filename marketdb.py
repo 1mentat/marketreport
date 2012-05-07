@@ -119,62 +119,40 @@ def createSummaryFromDay(day, daybefore):
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on dropping daytemp"
 
-def createStocks():
-    items = set()
+def itemValueOverPeriod(days, typeID):
+    bought = 0
+    boughtCost = 0
+    sold = 0
+    soldCost = 0
+    averageValue = 0
 
+    now = datetime.utcnow()
+    today = datetime(now.year,now.month,now.day,23,59,59)
+    day = timedelta(1)
+    last = today - (days * day)
     try:
-        c.execute("SELECT DISTINCT typeID FROM summary")
+        c.execute("SELECT quantity,price,transactionType FROM transactions WHERE typeID={2} AND transactionDateTime <= {0} AND transactionDateTime > {1}".format(timegm(today.utctimetuple()), timegm(last.utctimetuple()), typeID))
+
         rows = c.fetchall()
         for row in rows:
-            items.add(row[0])
+            if row[2] == 'buy':
+                bought += row[0]
+                boughtCost += (row[0] * row[1])
+            elif row[2] == 'sell':
+                sold += row[0]
+                soldCost += (row[0] * row[1])
+
+        if rows:
+            if (sold and bought):
+                averageValue = ((soldCost / sold) + (boughtCost / bought)) / 2
+            elif sold:
+                averageValue = (soldCost / sold)
+            elif bought:
+                averageValue = (boughtCost / bought)
+
+        return averageValue
+
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-        print "Exception on distinct items for summary select"
+        print "Exception on itemValueOverPeriod"
 
-    for filtered in settings.excluded_items:
-        try:
-            items.remove(filtered)
-        except KeyError:
-            pass
-
-    for item in sorted(items):
-        bought = 0
-        boughtCost = 0
-        sold = 0
-        soldCost = 0
-        try:
-            c.execute("SELECT typeID,bought,boughtCost,sold,soldCost FROM summary WHERE typeID={0}".format(item))
-            rows = c.fetchall()
-            for row in rows:
-                bought += row[1]
-                boughtCost += row[2]
-                sold += row[3]
-                soldCost += row[4]
-
-            if rows:
-                if (sold and bought):
-                    averageValue = ((soldCost / sold) + (boughtCost / bought)) / 2
-                elif sold:
-                    averageValue = (soldCost / sold)
-                elif bought:
-                    averageValue = (boughtCost / bought)
-
-                if bought >= sold:
-                    stock = bought - sold
-                elif sold > bought:
-                    stock = 0
-
-                stockValue = averageValue * stock
-
-                print '{0} average value of {1}, stock value of {2}'.format(item,averageValue,stockValue)
-
-                #try:
-                #    c.execute('''INSERT or REPLACE INTO summary values (?, ?, ?, ?, ?, ?)''',(item, dmy, bought, boughtCost, sold, soldCost))
-                #    conn.commit()
-                #except:
-                #    print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-                #    print "Exception on summary insert"
-
-        except:
-            print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-            print "Exception on price processing on summary select"
