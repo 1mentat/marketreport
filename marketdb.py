@@ -5,6 +5,7 @@ import codecs
 import sqlite3
 import sys
 import settings
+import evedb
 
 conn = None
 c = None
@@ -67,23 +68,17 @@ def createSummaryFromDay(day, daybefore):
         return
 
     dmy = day.strftime("%Y%m%d")
+
     items = set()
 
-    try:
-        c.execute("SELECT DISTINCT typeID FROM daytemp")
-        rows = c.fetchall()
-        for row in rows:
-            items.add(row[0])
-    except:
-        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
-        print "Exception on distinct items for daytemp select"
-
-    for filtered in settings.excluded_items:
-        try:
-            items.remove(filtered)
-        except KeyError:
+    for name in settings.included_items:
+        typeID = evedb.getTypeIDfromTypeName(name)
+        if typeID == -1:
+            print 'Unable to find {0} in item database'.format(name)
             pass
-    
+        else:
+            items.add(typeID)
+
     for item in items:
         bought = 0
         boughtCost =0
@@ -150,7 +145,7 @@ def itemValueOverPeriod(days, typeID):
             elif bought:
                 averageValue = (boughtCost / bought)
 
-        return averageValue
+        return bought, boughtCost, sold, soldCost, averageValue
 
     except:
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]

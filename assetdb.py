@@ -22,6 +22,19 @@ def setupdb() :
         print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
         print "Exception on create assets"
 
+def resetdb():
+    try:
+        c.execute('''drop table assets''')
+        conn.commit()
+
+        c.execute('''create table if not exists assets (locationID integer, \
+                                                            typeID integer, \
+                                                            quantity integer)''')
+        conn.commit()
+    except:
+        print "Unexpected error:", sys.exc_info()[0], sys.exc_info()[1]
+        print "Exception on create assets"
+
 def addasset(locationID, typeID, quantity):
     try:
         c.execute("insert or ignore into assets values (?, ?, ?)", (locationID, typeID, quantity))

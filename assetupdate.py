@@ -6,9 +6,7 @@ eveapi = imp.load_source('eveapi', '../eveapi/eveapi.py')
 
 def getContents(locationID, row):
     for crow in row.contents:
-        print crow
         assetdb.addasset(locationID, crow.typeID, crow.quantity)
-        #assetdb.addasset(locationID, crow.itemID, crow.quantity)
         try:
             if crow.contents:
                 getContents(locationID, crow)
@@ -17,6 +15,7 @@ def getContents(locationID, row):
 
 if __name__ == '__main__':
     assetdb.setupdb()
+    assetdb.resetdb()
     parser = argparse.ArgumentParser(description='Options')
     parser.add_argument('-n', '--name', dest='name', default=settings.name)
     args = parser.parse_args()
@@ -32,7 +31,6 @@ if __name__ == '__main__':
             aresult = auth.char.AssetList(characterID=character.characterID)
 
             for row in aresult.assets:
-                print row
                 assetdb.addasset(row.locationID, row.typeID, row.quantity)
                 try:
                     if row.contents:

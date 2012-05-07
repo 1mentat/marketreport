@@ -1,4 +1,5 @@
 keyID = ''
 vCode = ''
 name = ''
-excluded_items = []
+included_items = ['Tritanium']
+valuePeriod = 30

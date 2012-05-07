@@ -55,7 +55,19 @@ if __name__ == '__main__':
 
     for typeID in included_items_ids:
         stock = assetdb.stockByTypeID(typeID)
-        value = marketdb.itemValueOverPeriod(settings.valuePeriod,typeID)
-        print '{3}: stock of {0} worth {1} at prices over the last {2} days'.format(stock, stock * value, settings.valuePeriod, evedb.getTypeNamefromTypeID(typeID))
+        bought, boughtCost, sold, soldCost, value = marketdb.itemValueOverPeriod(settings.valuePeriod,typeID)
+        origstock = stock - bought + sold
+    #    if origstock < 0:
+    #        origstock = 0
+    #    if origstock:
+    #        avgstock = ((origstock + stock) / 2) / settings.valuePeriod
+    #    else:
+    #        avgstock = stock / settings.valuePeriod
+        #print 'GG equation: ((soldCost - boughtCost) + (stock * value)) / (((avgstock) / settings.valuePeriod) * value)'
+        #print 'GG equation: (({0} - {1}) + ({2} * {3})) / ((({4}) / {5}) * {6})'.format(soldCost,boughtCost,stock,value, avgstock, settings.valuePeriod, value)
+        print 'GG equation: (({0} - {1}) + ({2} * {3}))'.format(soldCost,boughtCost,stock,value)
+        #ggval = ((soldCost - boughtCost) + (stock * value)) / ((((origstock + stock) / 2) / settings.valuePeriod) * value)
+        ggval = ((soldCost - boughtCost) + (stock * value)) 
+        print '{3}: stock of {0} worth {1} at prices over the last {2} days with a GG value of {4}'.format(stock, stock * value, settings.valuePeriod, evedb.getTypeNamefromTypeID(typeID), ggval)
 
-    #marketdb.createSummaryForItems(14)
+    marketdb.createSummaryForItems(settings.valuePeriod)
